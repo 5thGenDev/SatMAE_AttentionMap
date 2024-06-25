@@ -26,7 +26,7 @@ class Mlp(nn.Module):
         x = self.drop(x)
         return x
 
-
+# Add=on window_size, relative position bias and return atttention.
 class Attention(nn.Module):
     def __init__(
             self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0.,
@@ -201,7 +201,7 @@ class VisionTransformer(nn.Module):
         self.in_chans = in_chans
 
         self.patch_embed = PatchEmbed(
-            img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+            img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim, norm_layer=None, flatten=True, bias=True)
         num_patches = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
