@@ -10,7 +10,8 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from timm.models.vision_transformer import PatchEmbed, Block
+from util.vision_transformer import PatchEmbed, Block
+# from timm.models.vision_transformer import PatchEmbed, Block
 
 from util.pos_embed import get_2d_sincos_pos_embed
 
@@ -172,6 +173,29 @@ class MaskedAutoencoderViT(nn.Module):
         x = self.norm(x)
 
         return x, mask, ids_restore
+
+    def forward_encoder_test(self,x):
+        # embed patches
+        # Since tis for inference, no random_masking in place
+        x = self.patch_embed(x)
+
+        # add pos embed w/o cls token
+        x = x + self.pos_embed[:, 1:, :]
+
+        # append cls token
+        cls_token = self.cls_token + self.pos_embed[:, :1, :]
+        cls_tokens = cls_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+        # self.attention_weights = [None] * len(self.blocks)
+
+        # apply Transformer blocks
+        for i,blk in enumerate(self.blocks):
+            if i < len(self.blocks) - 1:
+                x = blk(x)
+            else:
+                return blk(x, return_attention=True)
+ 
+        return x
 
     def forward_decoder(self, x, ids_restore):
         # embed tokens
