@@ -246,10 +246,14 @@ class MaskedAutoencoderViT(nn.Module):
         return loss
 
     def forward(self, imgs, mask_ratio=0.75):
-        latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
-        pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
-        loss = self.forward_loss(imgs, pred, mask)
-        return loss, pred, mask
+        if not model.training:
+            # return attention map if not training.
+            return self.forward_encoder_test(imgs)
+        else:
+            latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+            pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
+            loss = self.forward_loss(imgs, pred, mask)
+            return loss, pred, mask
 
 
 def mae_vit_base_patch16_dec512d8b(**kwargs):
