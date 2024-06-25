@@ -299,6 +299,7 @@ class VisionTransformer(nn.Module):
         else:
             return x[:, 0]
 
+    # For visualising attention map of baseline ViT 
     def forward_test(self, x):
         x = self.patch_embed(x)
         batch_size, seq_len, _ = x.size()
