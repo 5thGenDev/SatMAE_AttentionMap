@@ -125,6 +125,10 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
             del self.norm  # remove the original norm
 
+        self.blocks = nn.ModuleList([
+            Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
+            for i in range(depth)])
+
     def forward_features(self, x):
         B = x.shape[0]
         x = self.patch_embed(x)
