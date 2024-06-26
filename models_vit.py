@@ -19,7 +19,7 @@ from timm.layers import PatchEmbed, Mlp, DropPath, use_fused_attn
 import torch.nn.functional as F
 
 import cv2
-import cv2_imshow
+from google.colab.patches import cv2_imshow
 
 # Attention with return attention
 class Attention(nn.Module):
