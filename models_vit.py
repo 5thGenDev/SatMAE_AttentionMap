@@ -93,16 +93,17 @@ class Block(nn.Module):
 
     def forward(self, x, rel_pos_bias=None, return_attention=False):
         y,attn = self.attn(self.norm1(x), rel_pos_bias=rel_pos_bias)
-        if return_attention:
-            return attn
-
         if self.gamma_1 is None:
             x = x + self.drop_path(y)
             x = x + self.drop_path(self.mlp(self.norm2(x)))
         else:
             x = x + self.drop_path(y)
             x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
-        return x
+        
+        if return_attention:
+            return x, attn
+        else:
+            return x
 
 
 
@@ -138,8 +139,11 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         x = x + self.pos_embed
         x = self.pos_drop(x)
 
-        for blk in self.blocks:
-            x = blk(x)
+        for i,blk in enumerate(self.blocks):
+            if i < len(self.blocks) - 1:
+                x = blk(x)
+            else:
+                return blk(x, return_attention=True)
 
         if self.global_pool:
             x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
