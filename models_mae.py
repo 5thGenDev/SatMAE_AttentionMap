@@ -10,11 +10,9 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from util.vision_transformer import PatchEmbed, Block
-# from timm.models.vision_transformer import PatchEmbed, Block
+from timm.models.vision_transformer import PatchEmbed, Block
 
 from util.pos_embed import get_2d_sincos_pos_embed
-import cv2_imshow
 
 
 class MaskedAutoencoderViT(nn.Module):
@@ -175,29 +173,6 @@ class MaskedAutoencoderViT(nn.Module):
 
         return x, mask, ids_restore
 
-    def forward_encoder_test(self,x):
-        # embed patches
-        # Since tis for inference, no random_masking in place
-        x = self.patch_embed(x)
-
-        # add pos embed w/o cls token
-        x = x + self.pos_embed[:, 1:, :]
-
-        # append cls token
-        cls_token = self.cls_token + self.pos_embed[:, :1, :]
-        cls_tokens = cls_token.expand(x.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
-        # self.attention_weights = [None] * len(self.blocks)
-
-        # apply Transformer blocks
-        for i,blk in enumerate(self.blocks):
-            if i < len(self.blocks) - 1:
-                x = blk(x)
-            else:
-                return blk(x, return_attention=True)
- 
-        return x
-
     def forward_decoder(self, x, ids_restore):
         # embed tokens
         x = self.decoder_embed(x)
@@ -247,35 +222,6 @@ class MaskedAutoencoderViT(nn.Module):
         return loss
 
     def forward(self, imgs, mask_ratio=0.75):
-        if not model.training:
-            B, C, H, W = imgs.shape
-            imgs_np = []
-            for i in range(imgs.shape[0]):
-                img_np = imgs[i].detach().cpu().numpy()
-                img_np = cv2.normalize(img_np, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-                img_np = img_np.astype(np.uint8)
-                imgs_np.append(img_np)
-            concat_imgs = np.hstack(imgs_np)
-            cv2.imshow('SAR Val Images', concat_imgs)
-            
-            # return attention map if not training.
-            attn = self.forward_encoder_test(imgs)
-            attn = attn[:, :, 1:2, 1:]
-
-            mask_weights = attn.mean(dim=1, keepdim=True)
-            mask_weights = mask_weights.view(B, 1, img_size // patch_size, img_size // patch_size)
-            mask_weights = F.interpolate(mask_weights, size=(img_size, img_size), mode='bilinear', align_corners=False)
-            mask_weights = mask_weights.squeeze(1)     
-
-            mask_weights_np = []
-            for i in range(mask_weight.shape[0]):
-                mask_weight_np = mask_weights[i].detach().cpu().numpy()
-                mask_weight_np = cv2.normalize(mask_weight_np, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-                mask_weight_np = mask_weight_np.astype(np.uint8)
-                mask_weights_np.append(mask_weight_np)
-            concat_mask_weights = np.hstack(mask_weights_np)
-            cv2.imshow('Masking weights', concat_mask_weights)
-         
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
         pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
         loss = self.forward_loss(imgs, pred, mask)
