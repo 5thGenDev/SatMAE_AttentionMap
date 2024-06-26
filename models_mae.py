@@ -248,7 +248,15 @@ class MaskedAutoencoderViT(nn.Module):
     def forward(self, imgs, mask_ratio=0.75):
         if not model.training:
             # return attention map if not training.
-            return self.forward_encoder_test(imgs)
+            attn = self.forward_encoder_test(imgs)
+            attn = attn[:, :, 1:2, 1:]
+
+            mask_weight = attn.mean(dim=1, keepdim=True)
+            mask_weight = mask_weight.view(B, 1, H // P, W // P)
+            mask_weight = F.interpolate(mask_weight, size=(H, W), mode='bilinear', align_corners=False)
+            mask_weight = mask_weight.squeeze(1)        
+
+            return mask
         else:
             latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
             pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
