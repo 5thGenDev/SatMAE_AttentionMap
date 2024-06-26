@@ -18,6 +18,9 @@ from functools import partial
 from timm.layers import PatchEmbed, Mlp, DropPath, use_fused_attn
 import torch.nn.functional as F
 
+import cv2
+import cv2_imshow
+
 # Attention with return attention
 class Attention(nn.Module):
     fused_attn: Final[bool]
@@ -131,7 +134,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             for i in range(depth)])
 
     def forward_features(self, x):
-        B = x.shape[0]
+        B, C, H, W = imgs.shape
         x = self.patch_embed(x)
 
         cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
@@ -143,7 +146,34 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             if i < len(self.blocks) - 1:
                 x = blk(x)
             else:
-                return blk(x, return_attention=True)
+                x, attn = blk(x, return_attention=True)
+
+                imgs_np = []
+                for i in range(imgs.shape[0]):
+                    img_np = imgs[i].detach().cpu().numpy()
+                    img_np = cv2.normalize(img_np, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+                    img_np = img_np.astype(np.uint8)
+                    imgs_np.append(img_np)
+                concat_imgs = np.hstack(imgs_np)
+                cv2_imshow('SAR Val Images', concat_imgs)
+                
+                # return attention map if not training.
+                attn = self.forward_encoder_test(imgs)
+                attn = attn[:, :, 1:2, 1:]
+    
+                mask_weights = attn.mean(dim=1, keepdim=True)
+                mask_weights = mask_weights.view(B, 1, H // patch_size, W // patch_size)
+                mask_weights = F.interpolate(mask_weights, size=(H, W), mode='bilinear', align_corners=False)
+                mask_weights = mask_weights.squeeze(1)     
+    
+                mask_weights_np = []
+                for i in range(mask_weight.shape[0]):
+                    mask_weight_np = mask_weights[i].detach().cpu().numpy()
+                    mask_weight_np = cv2.normalize(mask_weight_np, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+                    mask_weight_np = mask_weight_np.astype(np.uint8)
+                    mask_weights_np.append(mask_weight_np)
+                concat_mask_weights = np.hstack(mask_weights_np)
+                cv2_imshow('Masking weights', concat_mask_weights)
 
         if self.global_pool:
             x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
@@ -157,20 +187,20 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
 def vit_base_patch16(**kwargs):
     model = VisionTransformer(
-        embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+        embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, patch_size=16, 
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model
 
 
 def vit_large_patch16(**kwargs):
     model = VisionTransformer(
-        embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
+        embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True, patch_size=16, 
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model
 
 
 def vit_huge_patch14(**kwargs):
     model = VisionTransformer(
-        embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True,
+        embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True, patch_size=14, 
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model
