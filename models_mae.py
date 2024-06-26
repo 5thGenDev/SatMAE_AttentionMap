@@ -276,11 +276,10 @@ class MaskedAutoencoderViT(nn.Module):
             concat_mask_weights = np.hstack(mask_weights_np)
             cv2.imshow('Masking weights', concat_mask_weights)
          
-        else:
-            latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
-            pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
-            loss = self.forward_loss(imgs, pred, mask)
-            return loss, pred, mask
+        latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+        pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
+        loss = self.forward_loss(imgs, pred, mask)
+        return loss, pred, mask
 
 
 def mae_vit_base_patch16_dec512d8b(**kwargs):
