@@ -20,6 +20,7 @@ import torch.nn.functional as F
 
 import cv2
 import matplotlib.pyplot as plt
+from PIL import Image
 
 # Attention with return attention
 class Attention(nn.Module):
@@ -147,7 +148,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                 x = blk(x)
             else:
                 x, attn = blk(x, return_attention=True)
-
+                
                 imgs_np = []
                 for i in range(imgs.shape[0]):
                     img_np = imgs[i].detach().cpu().numpy()
@@ -155,7 +156,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                     img_np = img_np.astype(np.uint8)
                     imgs_np.append(img_np)
                 concat_imgs = np.hstack(imgs_np)
-                plt.imshow('SAR Val Images', concat_imgs)
+                SAR_imgs = Image.fromarray(np.uint8(concat_imgs))
                 
                 # return attention map if not training.
                 attn = self.forward_encoder_test(imgs)
@@ -173,10 +174,16 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                     mask_weight_np = mask_weight_np.astype(np.uint8)
                     mask_weights_np.append(mask_weight_np)
                 concat_mask_weights = np.hstack(mask_weights_np)
-                plt.imshow('Masking weights', concat_mask_weights)
+                mask_weights_imgs = Image.fromarray(np.uint8(concat_mask_weights))
 
+                fig, axes = plt.subplots(2, 1) 
+                axes[0].imshow(SAR_imgs)
+                axes[0].set_title('Difficult SAR images')
+                axes[1].imshow(mask_weights_imgs)
+                axes[1].set_title('Respective masking weight upsampled to image sizes!')
+                plt.subplots_adjust(hspace=0.5)
                 plt.show()
-
+        
         if self.global_pool:
             x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
             outcome = self.fc_norm(x)
