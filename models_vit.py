@@ -19,7 +19,7 @@ from timm.layers import PatchEmbed, Mlp, DropPath, use_fused_attn
 import torch.nn.functional as F
 
 import cv2
-from google.colab.patches import cv2_imshow
+import matplotlib.pyplot as plt
 
 # Attention with return attention
 class Attention(nn.Module):
@@ -155,7 +155,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                     img_np = img_np.astype(np.uint8)
                     imgs_np.append(img_np)
                 concat_imgs = np.hstack(imgs_np)
-                cv2_imshow('SAR Val Images', concat_imgs)
+                plt.imshow('SAR Val Images', concat_imgs)
                 
                 # return attention map if not training.
                 attn = self.forward_encoder_test(imgs)
@@ -173,7 +173,9 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                     mask_weight_np = mask_weight_np.astype(np.uint8)
                     mask_weights_np.append(mask_weight_np)
                 concat_mask_weights = np.hstack(mask_weights_np)
-                cv2_imshow('Masking weights', concat_mask_weights)
+                plt.imshow('Masking weights', concat_mask_weights)
+
+                plt.show()
 
         if self.global_pool:
             x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
