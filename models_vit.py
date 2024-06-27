@@ -6,6 +6,7 @@ from functools import partial
 # visualise SAR image and attention map
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
