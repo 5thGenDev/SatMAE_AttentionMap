@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.nn import functional as f
+from torch.nn import functional as F
 from functools import partial
 
 class Attention(nn.Module):
