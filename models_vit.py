@@ -15,7 +15,7 @@ from util.pos_embed import get_2d_sincos_pos_embed
 
 from torch.jit import Final
 from functools import partial
-from timm.layers import PatchEmbed, Mlp, DropPath, use_fused_attn
+from timm.models.layers import PatchEmbed, Mlp, DropPath, use_fused_attn
 import torch.nn.functional as F
 
 import cv2
