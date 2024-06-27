@@ -6,7 +6,6 @@ from functools import partial
 # visualise SAR image and attention map
 import numpy as np
 import matplotlib.pyplot as plt
-import cv2
 
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
@@ -100,8 +99,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                 imgs_np = []
                 for i in range(imgs.shape[0]):
                     img_np = imgs[i].detach().cpu().numpy()
-                    img_np = cv2.normalize(img_np, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-                    img_np = img_np.astype(np.uint8)
+                    img_np = (img_np - np.min(img_np)) / (np.max(img_np) - np.min(img_np))
                     imgs_np.append(img_np)
                 concat_imgs = np.hstack(imgs_np)
                 SAR_imgs = Image.fromarray(np.uint8(concat_imgs))
@@ -118,8 +116,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
                 mask_weights_np = []
                 for i in range(mask_weight.shape[0]):
                     mask_weight_np = mask_weights[i].detach().cpu().numpy()
-                    mask_weight_np = cv2.normalize(mask_weight_np, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-                    mask_weight_np = mask_weight_np.astype(np.uint8)
+                    mask_weight_np = (mask_weight_np - np.min(mask_weight_np)) / (np.max(mask_weight_np) - np.min(mask_weight_np))
                     mask_weights_np.append(mask_weight_np)
                 concat_mask_weights = np.hstack(mask_weights_np)
                 mask_weights_imgs = Image.fromarray(np.uint8(concat_mask_weights))
