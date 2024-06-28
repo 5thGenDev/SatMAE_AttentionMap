@@ -65,8 +65,16 @@ class Block(nn.Module):
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
     """ Vision Transformer with support for global average pooling
     """
-    def __init__(self, global_pool=False, **kwargs):
-        super(VisionTransformer, self).__init__(**kwargs)
+    def __init__(self, embed_dim, depth, num_heads, mlp_ratio, 
+        qkv_bias, norm_layer, global_pool=False, **kwargs):
+        super(VisionTransformer, self).__init__(
+            embed_dim=embed_dim, 
+            num_heads=num_heads, 
+            mlp_ratio=mlp_ratio, 
+            qkv_bias=qkv_bias, 
+            norm_layer=norm_layer, 
+            **kwargs
+        )
 
         # Added by Samar, need default pos embedding
         pos_embed = get_2d_sincos_pos_embed(self.pos_embed.shape[-1], int(self.patch_embed.num_patches ** .5),
